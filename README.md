@@ -4,7 +4,9 @@ A browser-based robot / quad controller that drives any device over **MQTT** (We
 
 ## Features
 
-- **Landscape game-console layout** — dual control pads (throttle & yaw · pitch & roll) with per-button LED feedback and haptics
+- **Light, clean interface** — soft white theme, high contrast, easy on the eyes
+- **Landscape game-console layout** — dual control pads (throttle & yaw · pitch & roll) with hold feedback and haptics
+- **Topic on every button** — each control prints the exact MQTT topic it publishes (updates live with the base topic)
 - **Arm / Mode safety switches** — armed (green) · disarmed (red) · stabilized / acro
 - **Live link telemetry** — connection state, RX counter and last received message in the console
 - **Settings sheet** — broker WebSocket URL, username, password (never stored) and base topic, remembered locally
