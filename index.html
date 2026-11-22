@@ -3,15 +3,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#eef2f7">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="description" content="Mission controller over MQTT — send waypoint (x,y) missions to a drone.">
-<title>Mission Controller · MQTT</title>
+<meta name="description" content="DroneShield controller over MQTT — signed commands to droneshield/device_01/commands.">
+<title>DroneShield Controller · MQTT</title>
 <style>
 :root{color-scheme:light;--bg:#eef2f7;--card:#ffffff;--soft:#f6f8fb;--bd:#dde3ec;--bd2:#cbd5e1;
- --tx:#17202e;--mu:#6b7688;--ac:#2563eb;--ok:#16a34a;--wr:#dc2626;--am:#d97706;box-sizing:border-box}
+ --tx:#17202e;--mu:#6b7688;--ac:#2563eb;--ok:#16a34a;--wr:#dc2626;--am:#d97706;--vio:#7c3aed;box-sizing:border-box}
 
 *{box-sizing:inherit;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:15px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif;overscroll-behavior:none;overflow:auto}
-button{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:12px;cursor:pointer}
+button{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:14px;cursor:pointer}
 button:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 input{font:inherit}
 
@@ -21,8 +21,9 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   radial-gradient(55vw 55vh at 100% 100%,rgba(22,163,74,.06),transparent 60%),
   linear-gradient(180deg,#f2f5f9,#eaeff6)}
 
-.wrap{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:max(12px,env(safe-area-inset-top,0px)) 16px max(12px,env(safe-area-inset-bottom,0px)) 16px;display:flex;flex-direction:column;gap:12px;min-height:100%}
+.wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:max(12px,env(safe-area-inset-top,0px)) 16px max(12px,env(safe-area-inset-bottom,0px)) 16px;display:flex;flex-direction:column;gap:12px;min-height:100%}
 
+/* header */
 .hdr{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:12px 14px;
  box-shadow:0 1px 2px rgba(16,24,40,.05),0 10px 24px rgba(16,24,40,.06)}
 #dot{width:11px;height:11px;border-radius:50%;background:var(--wr);flex:none;box-shadow:0 0 0 3px rgba(220,38,38,.12)}
@@ -37,24 +38,21 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .chip.live{color:#1d4ed8;border-color:#bfdbfe;background:#eff6ff}
 .chip.ok{color:#047857;border-color:#a7f3d0;background:#ecfdf5}
 
-.card{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:14px;
+/* command buttons */
+.cmds{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:14px;
  box-shadow:0 1px 2px rgba(16,24,40,.05),0 10px 24px rgba(16,24,40,.06)}
-
-.mission h2{margin:0 0 8px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mu);font-weight:700}
-.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.row input{flex:1;min-width:80px;padding:10px 12px;border:1px solid var(--bd);border-radius:11px;background:var(--soft);color:var(--tx)}
-.row button{padding:10px 14px;font-weight:700}
-.row button.primary{background:#2563eb;border-color:#2563eb;color:#fff}
-.row button.danger{background:#fef2f2;border-color:#fecaca;color:#b91c1c}
-
-.waypoints{margin-top:10px;display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto}
-.wp{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--soft);border:1px solid var(--bd);border-radius:11px;font:12px ui-monospace,Menlo,Consolas,monospace}
-.wp .idx{color:var(--mu);width:28px}
-.wp .xy{flex:1}
-.wp button{padding:4px 8px;font-size:12px;border-radius:8px}
-
-.actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.actions button{flex:1;min-width:120px;padding:12px;font-weight:700}
+.cmds h2{grid-column:1/-1;margin:0 0 4px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mu);font-weight:700}
+.cmd{position:relative;padding:14px 12px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;
+ background:var(--soft);border:1px solid var(--bd);border-radius:14px;text-align:left;min-height:78px}
+.cmd .g{font-size:20px;line-height:1}
+.cmd .name{font-weight:700;font-size:15px;letter-spacing:.02em}
+.cmd .sub{color:var(--mu);font-size:11.5px}
+.cmd .tp{font:9.5px ui-monospace,Menlo,Consolas,monospace;color:var(--mu);background:#e9eef5;border:1px solid var(--bd);border-radius:6px;padding:2px 6px;margin-top:2px;align-self:stretch;text-align:center}
+.cmd:hover{border-color:var(--ac)}
+.cmd:active{transform:translateY(1px) scale(.985)}
+.cmd.arm{background:#ecfdf5;border-color:#a7f3d0}.cmd.arm .name{color:#047857}.cmd.arm .tp{background:#d1fae5;border-color:#a7f3d0;color:#047857}
+.cmd.disarm{background:#fef2f2;border-color:#fecaca}.cmd.disarm .name{color:#b91c1c}.cmd.disarm .tp{background:#fee2e2;border-color:#fecaca;color:#b91c1c}
+.cmd.wide{grid-column:1/-1}
 
 .term{background:var(--soft);border:1px solid var(--bd);border-radius:14px;padding:9px 11px;display:flex;flex-direction:column;gap:3px;min-height:56px;justify-content:flex-end}
 #rx{color:#94a3b8;font:10px ui-monospace,Menlo,Consolas,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -62,6 +60,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 #log{color:var(--mu);font:10.5px ui-monospace,Menlo,Consolas,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hint{font:10px ui-monospace,Menlo,Consolas,monospace;color:#94a3b8;text-align:center}
 
+/* settings */
 #cfg{display:none;position:fixed;inset:0;z-index:5;background:rgba(238,242,247,.96);overflow:auto;
  padding:max(14px,env(safe-area-inset-top,0px)) max(18px,env(safe-area-inset-right,0px)) 14px max(18px,env(safe-area-inset-left,0px))}
 #cfg.open{display:block;animation:sheet .18s ease}
@@ -90,35 +89,32 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 <div class="wrap">
   <div class="hdr">
     <span id="dot"></span>
-    <h1>Mission Controller<small id="sub">disconnected</small></h1>
+    <h1>DroneShield Controller<small id="sub">disconnected</small></h1>
     <button id="cfgb" aria-label="Connection settings" aria-expanded="false">⚙</button>
   </div>
 
   <div class="chips">
     <span class="chip" id="chipLink">LINK · OFF</span>
     <span class="chip" id="chipRx">RX · 0</span>
-    <span class="chip" id="chipTopic">drone/mission</span>
+    <span class="chip" id="chipSeq">SEQ · 0</span>
+    <span class="chip" id="chipTopic">droneshield/device_01/commands</span>
   </div>
 
-  <div class="card mission">
-    <h2>Waypoints (x, y)</h2>
-    <div class="row">
-      <input id="ix" type="number" step="any" placeholder="x">
-      <input id="iy" type="number" step="any" placeholder="y">
-      <button id="bAdd" class="primary" type="button">Add</button>
-    </div>
-    <div class="waypoints" id="wplist"></div>
-    <div class="actions">
-      <button id="bSend" class="primary" type="button">Send Mission</button>
-      <button id="bClear" class="danger" type="button">Clear</button>
-    </div>
-    <div class="hint" style="margin-top:8px">publishes { "waypoints": [ { "x":.., "y":.. } ] }</div>
+  <div class="cmds">
+    <h2>Signed commands</h2>
+    <button class="cmd arm" data-cmd="ARM"><span class="g">🛡</span><span class="name">ARM</span><span class="sub">arm the device</span><em class="tp">—</em></button>
+    <button class="cmd disarm" data-cmd="DISARM"><span class="g">⛔</span><span class="name">DISARM</span><span class="sub">disarm the device</span><em class="tp">—</em></button>
+    <button class="cmd" data-cmd="STATUS_REQUEST"><span class="g">📡</span><span class="name">STATUS</span><span class="sub">request status</span><em class="tp">—</em></button>
+    <button class="cmd" data-cmd="PING"><span class="g">📶</span><span class="name">PING</span><span class="sub">liveness check</span><em class="tp">—</em></button>
+    <button class="cmd wide" data-cmd="SIM_RESET"><span class="g">🔄</span><span class="name">SIM RESET</span><span class="sub">reset the simulation</span><em class="tp">—</em></button>
   </div>
+  <div class="hint">keyboard: A arm · D disarm · S status · P ping · R sim reset · Esc settings</div>
 
   <div class="term">
     <div id="rx">awaiting telemetry…</div>
     <div id="log" aria-live="polite">—</div>
   </div>
+  <div class="hint">each tap publishes a signed JSON command · seq increases on every publish</div>
 </div>
 
 <section id="cfg"><div class="in">
@@ -126,81 +122,119 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   <div class="card">
     <div class="grid">
       <label class="w">Broker (WebSocket URL)<input id="url" value="wss://3741a09c57ad476c8fd43f8042614b57.s1.eu.hivemq.cloud:8884/mqtt" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
-      <label>Username<input id="usr" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+      <label>Username<input id="usr" value="droneshield_device_01" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
       <label>Password<input id="pwd" type="password" autocomplete="off"></label>
-      <label class="w">Publish topic<input id="topic" value="drone/mission" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+      <label>Device ID<input id="dev" value="device_01" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+      <label class="w">HMAC key (DSHL_HMAC_KEY)<input id="key" type="password" autocomplete="off" placeholder="must match firmware"></label>
     </div>
-    <label class="showrow"><input type="checkbox" id="showp"> Show password</label>
+    <label class="showrow"><input type="checkbox" id="showp"> Show passwords / key</label>
     <div class="row"><button id="bCon" type="button">Connect</button><button id="bDis" type="button">Disconnect</button></div>
-    <p class="note"><b>Passwords are never stored.</b> Broker URL, username and topic are remembered. Each mission is published as a simple JSON message (no signature).</p>
+    <p class="note"><b>Passwords and HMAC key are never stored.</b> Broker URL, username and device ID are remembered. Commands publish to <b>droneshield/&lt;device_id&gt;/commands</b> (firmware listens on TLS 8883; browser uses WSS). <b>seq</b> is persisted locally and increases on every publish (anti-replay).</p>
   </div>
 </div></section>
 
 <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js"></script>
 <script>
+/*
+  Publishes signed commands to droneshield/<device_id>/commands
+  Payload: {"device_id":..,"seq":..,"timestamp":..,"command":..,"params":{},"signature":..}
+  signature = HMAC-SHA256 hex of device_id|seq|timestamp|command|<canonical params>
+  canonical params = JSON.stringify(params, sorted keys, compact)
+*/
 const $=id=>document.getElementById(id);
-let client=null,rxCount=0;
-const wps=[];
-const saved=(()=>{try{return JSON.parse(localStorage.getItem('mission-ctl')||'{}')}catch(e){return{}}})();
-for(const k of ['url','usr','topic'])if(saved[k])$(k).value=saved[k];
-$('showp').onchange=()=>{$('pwd').type=$('showp').checked?'text':'password'};
+let client=null,rxCount=0,seq=0;
+const saved=(()=>{try{return JSON.parse(localStorage.getItem('droneshield-ctl')||'{}')}catch(e){return{}}})();
+for(const k of ['url','usr','dev'])if(saved[k])$(k).value=saved[k];
+// seq persisted (anti-replay) — never reset manually
+try{seq=parseInt(localStorage.getItem('droneshield-seq')||'0',10)||0}catch(e){seq=0}
+$('chipSeq').textContent='SEQ · '+seq;
 
-function topic(){return ($('topic').value.trim()||'drone/mission')}
-function renderTopic(){$('chipTopic').textContent=topic()}
-$('topic').addEventListener('input',renderTopic); renderTopic();
+$('showp').onchange=()=>{const t=$('showp').checked?'text':'password';$('pwd').type=t;$('key').type=t};
+
+function device(){return ($('dev').value.trim()||'device_01')}
+function topic(){return 'droneshield/'+device()+'/commands'}
+function hmacKey(){return $('key').value}
+
+// canonical params serializer: sorted keys, compact
+function canon(obj){
+  if(obj===null||typeof obj!=='object') return JSON.stringify(obj);
+  if(Array.isArray(obj)) return '['+obj.map(canon).join(',')+']';
+  const keys=Object.keys(obj).sort();
+  return '{'+keys.map(k=>JSON.stringify(k)+':'+canon(obj[k])).join(',')+'}';
+}
+
+async function hmacHex(key,msg){
+  const enc=new TextEncoder();
+  const k=await crypto.subtle.importKey('raw',enc.encode(key),{name:'HMAC',hash:'SHA-256'},false,['sign']);
+  const sig=await crypto.subtle.sign('HMAC',k,enc.encode(msg));
+  return [...new Uint8Array(sig)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function makePayload(command,params={}){
+  seq++; localStorage.setItem('droneshield-seq',String(seq));
+  $('chipSeq').textContent='SEQ · '+seq;
+  const ts=Math.floor(Date.now()/1000);
+  const cp=canon(params);
+  const sig=await hmacHex(hmacKey(), device()+'|'+seq+'|'+ts+'|'+command+'|'+cp);
+  // build payload in common.py order
+  const payload={device_id:device(),seq:seq,timestamp:ts,command:command,params:JSON.parse(cp),signature:sig};
+  return payload;
+}
 
 function log(t){$('log').textContent=t}
 function setStatus(on,t,sub){$('dot').classList.toggle('on',on);$('sub').textContent=t+' · '+(sub||'—');
  $('chipLink').textContent='LINK · '+(on?'UP':'OFF');$('chipLink').classList.toggle('live',on)}
+function renderTopic(){$('chipTopic').textContent=topic();
+ document.querySelectorAll('[data-cmd]').forEach(b=>{const tp=b.querySelector('.tp');if(tp)tp.textContent=topic()})}
+$('dev').addEventListener('input',renderTopic); renderTopic();
 
-function renderWps(){
-  const el=$('wplist'); el.innerHTML='';
-  wps.forEach((w,i)=>{
-    const d=document.createElement('div'); d.className='wp';
-    d.innerHTML='<span class="idx">#'+(i+1)+'</span><span class="xy">x = '+w.x+',  y = '+w.y+'</span>'+
-      '<button data-i="'+i+'">✕</button>';
-    d.querySelector('button').onclick=()=>{wps.splice(i,1);renderWps()};
-    el.appendChild(d);
-  });
-  if(!wps.length) el.innerHTML='<div class="hint" style="padding:8px">no waypoints yet</div>';
-}
-
-$('bAdd').onclick=()=>{
-  const x=parseFloat($('ix').value), y=parseFloat($('iy').value);
-  if(isNaN(x)||isNaN(y)){log('enter valid x and y');return}
-  wps.push({x,y}); renderWps();
-  $('ix').value=''; $('iy').value=''; $('ix').focus();
-};
-$('bClear').onclick=()=>{wps.length=0;renderWps();log('cleared')};
-$('bSend').onclick=()=>{
+async function send(cmd){
   if(!client||!client.connected){log('not connected');return}
-  if(!wps.length){log('add at least one waypoint');return}
-  const body=JSON.stringify({waypoints:wps.map(w=>({x:w.x,y:w.y}))});
+  if(!hmacKey()){log('enter HMAC key in settings');return}
+  const params={};
+  const payload=await makePayload(cmd,params);
+  const body=JSON.stringify(payload); // keys already in order; params sorted via canon->JSON.parse keeps order
+  // ensure compact (no spaces) — JSON.stringify default no spaces
   client.publish(topic(),body,{qos:1});
   log('TX '+topic()+' '+body);
-  try{navigator.vibrate&&navigator.vibrate(12)}catch(e){}
-};
+  buzz(12);
+}
+function buzz(ms=12){try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}}
 
 function connect(){
   disconnect();
-  try{localStorage.setItem('mission-ctl',JSON.stringify({url:$('url').value,usr:$('usr').value,topic:$('topic').value}))}catch(e){}
+  try{localStorage.setItem('droneshield-ctl',JSON.stringify({url:$('url').value,usr:$('usr').value,dev:$('dev').value}))}catch(e){}
   if(typeof mqtt==='undefined'){setStatus(false,'Library not loaded','check internet');return}
   setStatus(false,'Connecting…',$('url').value);
   const o={clientId:'ctl_'+Math.random().toString(16).slice(2,10),clean:true,reconnectPeriod:3000,connectTimeout:8000,keepalive:30,username:$('usr').value,password:$('pwd').value};
   client=mqtt.connect($('url').value.trim(),o);
   client.on('connect',()=>{setStatus(true,'Connected',topic());setCfg(false);
-    client.subscribe(topic(),{qos:1})});
+    client.subscribe(topic(),{qos:1});client.subscribe('droneshield/'+device()+'/telemetry',{qos:1});
+    client.subscribe('droneshield/'+device()+'/status',{qos:1})});
   client.on('reconnect',()=>setStatus(false,'Reconnecting…',$('url').value));
   client.on('close',()=>{if(client)setStatus(false,'Disconnected',$('url').value)});
   client.on('error',e=>setStatus(false,'Error',e&&e.message||'connection failed'));
   client.on('message',(t,p)=>{rxCount++;$('chipRx').textContent='RX · '+rxCount;
     const v=(p&&p.toString())||'';
-    $('rx').textContent=t+' ← '+v;$('rx').classList.add('has')});
+    $('rx').textContent=t.replace('droneshield/'+device()+'/','')+' ← '+v;$('rx').classList.add('has')});
 }
 function disconnect(){
   if(client){const c=client;client=null;try{c.end(true)}catch(e){}}
   setStatus(false,'Disconnected','—');
 }
+
+document.querySelectorAll('[data-cmd]').forEach(b=>{
+  b.addEventListener('click',()=>send(b.dataset.cmd));
+  b.addEventListener('contextmenu',e=>e.preventDefault());
+});
+
+const KEYMAP={KeyA:'ARM',KeyD:'DISARM',KeyS:'STATUS_REQUEST',KeyP:'PING',KeyR:'SIM_RESET'};
+window.addEventListener('keydown',e=>{
+  if(e.target&&/^(INPUT|TEXTAREA)$/.test(e.target.tagName))return;
+  if(e.code==='Escape'){setCfg(false);return}
+  const c=KEYMAP[e.code]; if(c){e.preventDefault();send(c)}
+});
+window.addEventListener('keyup',e=>{});
 
 function setCfg(o){$('cfg').classList.toggle('open',o);$('cfgb').setAttribute('aria-expanded',o)}
 $('cfgb').onclick=()=>setCfg(!$('cfg').classList.contains('open'));
@@ -208,6 +242,5 @@ $('cfgx').onclick=()=>setCfg(false);
 $('bCon').onclick=connect;
 $('bDis').onclick=disconnect;
 setCfg(true);
-renderWps();
 </script>
 </body></html>
