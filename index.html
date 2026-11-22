@@ -3,14 +3,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#eef2f7">
 <meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="description" content="DroneShield controller over MQTT — signed commands to droneshield/device_01/commands.">
-<title>DroneShield Controller · MQTT</title>
+<meta name="description" content="DroneShield flight controller over MQTT — signed commands to droneshield/device_01/commands.">
+<title>DroneShield Flight Controller · MQTT</title>
 <style>
-:root{color-scheme:light;--bg:#eef2f7;--card:#ffffff;--soft:#f6f8fb;--bd:#dde3ec;--bd2:#cbd5e1;
- --tx:#17202e;--mu:#6b7688;--ac:#2563eb;--ok:#16a34a;--wr:#dc2626;--am:#d97706;--vio:#7c3aed;box-sizing:border-box}
+:root{color-scheme:light;--bg:#eef2f7;--card:#ffffff;--soft:#f6f8fb;--bd:#dde3ec;
+ --tx:#17202e;--mu:#6b7688;--ac:#2563eb;--ok:#16a34a;--wr:#dc2626;--am:#d97706;box-sizing:border-box}
 
-*{box-sizing:inherit;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:15px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif;overscroll-behavior:none;overflow:auto}
+*{box-sizing:inherit;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:15px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif;overscroll-behavior:none;overflow:hidden}
 button{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:14px;cursor:pointer}
 button:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 input{font:inherit}
@@ -21,46 +21,63 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   radial-gradient(55vw 55vh at 100% 100%,rgba(22,163,74,.06),transparent 60%),
   linear-gradient(180deg,#f2f5f9,#eaeff6)}
 
-.wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:max(12px,env(safe-area-inset-top,0px)) 16px max(12px,env(safe-area-inset-bottom,0px)) 16px;display:flex;flex-direction:column;gap:12px;min-height:100%}
-
-/* header */
-.hdr{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:12px 14px;
+#app{position:relative;z-index:1;height:100%;display:grid;
+ grid-template-columns:1fr minmax(170px,260px) 1fr;gap:12px;align-items:stretch;
+ padding:max(10px,env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) max(10px,env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px))}
+.side{min-width:0;min-height:0;display:flex;align-items:center;justify-content:center}
+.deck{height:100%;max-width:100%;aspect-ratio:1;display:flex;flex-direction:column;gap:7px;min-height:0;
+ background:var(--card);border:1px solid var(--bd);border-radius:20px;padding:9px;
  box-shadow:0 1px 2px rgba(16,24,40,.05),0 10px 24px rgba(16,24,40,.06)}
+.deck-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:0 4px 1px;
+ font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ac);font-weight:700}
+.deck-h span:last-child{letter-spacing:.02em;text-transform:none;color:var(--mu);font-weight:500;font-size:11px}
+
+.pad{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:7px}
+.pad button{position:relative;overflow:hidden;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+ line-height:1;touch-action:none;border-radius:14px;background:var(--soft);
+ box-shadow:0 1px 2px rgba(16,24,40,.05);
+ transition:transform .08s ease,box-shadow .14s ease,border-color .14s ease,background .14s ease}
+.pad button .g{font-size:clamp(17px,5vh,25px)}
+.pad button small{font-size:clamp(9px,2.5vh,12px);color:var(--tx);font-weight:600;letter-spacing:.03em}
+.tp{font:8.5px/1.2 ui-monospace,Menlo,Consolas,monospace;color:var(--mu);
+ background:#e9eef5;border:1px solid var(--bd);border-radius:6px;padding:1px 5px;max-width:96%;
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.02em}
+.pad button.hold{border-color:var(--ac);background:#eff6ff;transform:translateY(1px) scale(.97);
+ box-shadow:0 0 0 3px rgba(37,99,235,.14)}
+.pad button.hold .tp{background:#dbeafe;border-color:#93c5fd;color:#1d4ed8}
+.pad .c{border:none;background:none;box-shadow:none;display:flex;align-items:center;justify-content:center;
+ color:var(--mu);font-size:clamp(9px,2.5vh,11.5px);text-align:center;pointer-events:none;letter-spacing:.1em;text-transform:uppercase}
+.u{grid-area:1/2}.d{grid-area:3/2}.l{grid-area:2/1}.r{grid-area:2/3}.c{grid-area:2/2}
+
+.mid{display:flex;flex-direction:column;gap:8px;min-height:0;justify-content:center;
+ background:var(--card);border:1px solid var(--bd);border-radius:20px;padding:11px;
+ box-shadow:0 1px 2px rgba(16,24,40,.05),0 14px 32px rgba(16,24,40,.07)}
+.top{display:flex;align-items:center;gap:9px}
 #dot{width:11px;height:11px;border-radius:50%;background:var(--wr);flex:none;box-shadow:0 0 0 3px rgba(220,38,38,.12)}
 #dot.on{background:var(--ok);box-shadow:0 0 0 3px rgba(22,163,74,.14)}
-.hdr h1{margin:0;font-size:15px;letter-spacing:.04em;flex:1}
-.hdr h1 small{display:block;color:var(--mu);font-weight:400;font-size:11px;letter-spacing:0;margin-top:2px}
-#cfgb{width:38px;height:38px;font-size:17px;padding:0;flex:none;border-radius:12px;background:var(--soft)}
+#stt{flex:1;min-width:0;font-weight:700;font-size:13px}
+#stt small{display:block;color:var(--mu);font-weight:400;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cfgb{width:34px;height:34px;font-size:16px;padding:0;flex:none;border-radius:11px;background:var(--soft)}
 #cfgb:hover{border-color:var(--ac);color:var(--ac)}
-
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{font:10px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.04em;color:var(--mu);background:var(--soft);border:1px solid var(--bd);border-radius:999px;padding:4px 9px}
 .chip.live{color:#1d4ed8;border-color:#bfdbfe;background:#eff6ff}
-.chip.ok{color:#047857;border-color:#a7f3d0;background:#ecfdf5}
-
-/* command buttons */
-.cmds{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:14px;
- box-shadow:0 1px 2px rgba(16,24,40,.05),0 10px 24px rgba(16,24,40,.06)}
-.cmds h2{grid-column:1/-1;margin:0 0 4px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mu);font-weight:700}
-.cmd{position:relative;padding:14px 12px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;
- background:var(--soft);border:1px solid var(--bd);border-radius:14px;text-align:left;min-height:78px}
-.cmd .g{font-size:20px;line-height:1}
-.cmd .name{font-weight:700;font-size:15px;letter-spacing:.02em}
-.cmd .sub{color:var(--mu);font-size:11.5px}
-.cmd .tp{font:9.5px ui-monospace,Menlo,Consolas,monospace;color:var(--mu);background:#e9eef5;border:1px solid var(--bd);border-radius:6px;padding:2px 6px;margin-top:2px;align-self:stretch;text-align:center}
-.cmd:hover{border-color:var(--ac)}
-.cmd:active{transform:translateY(1px) scale(.985)}
-.cmd.arm{background:#ecfdf5;border-color:#a7f3d0}.cmd.arm .name{color:#047857}.cmd.arm .tp{background:#d1fae5;border-color:#a7f3d0;color:#047857}
-.cmd.disarm{background:#fef2f2;border-color:#fecaca}.cmd.disarm .name{color:#b91c1c}.cmd.disarm .tp{background:#fee2e2;border-color:#fecaca;color:#b91c1c}
-.cmd.wide{grid-column:1/-1}
-
-.term{background:var(--soft);border:1px solid var(--bd);border-radius:14px;padding:9px 11px;display:flex;flex-direction:column;gap:3px;min-height:56px;justify-content:flex-end}
-#rx{color:#94a3b8;font:10px ui-monospace,Menlo,Consolas,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mid .cmd{padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:2px;
+ background:var(--soft);border:1px solid var(--bd);border-radius:12px;text-align:center;min-height:62px}
+.mid .cmd .g{font-size:17px;line-height:1}
+.mid .cmd .name{font-weight:700;font-size:12px;letter-spacing:.02em}
+.mid .cmd .sub{color:var(--mu);font-size:10px}
+.mid .cmd:hover{border-color:var(--ac)}
+.mid .cmd:active{transform:translateY(1px) scale(.985)}
+.mid .cmd.arm{background:#ecfdf5;border-color:#a7f3d0}.mid .cmd.arm .name{color:#047857}
+.mid .cmd.disarm{background:#fef2f2;border-color:#fecaca}.mid .cmd.disarm .name{color:#b91c1c}
+.hint{font:9.5px ui-monospace,Menlo,Consolas,monospace;color:#94a3b8;text-align:center;letter-spacing:.03em}
+.term{background:var(--soft);border:1px solid var(--bd);border-radius:13px;padding:7px 9px;
+ display:flex;flex-direction:column;gap:3px;min-height:50px;justify-content:flex-end}
+#rx{color:#94a3b8;font:9.5px ui-monospace,Menlo,Consolas,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #rx.has{color:var(--ok)}
-#log{color:var(--mu);font:10.5px ui-monospace,Menlo,Consolas,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hint{font:10px ui-monospace,Menlo,Consolas,monospace;color:#94a3b8;text-align:center}
+#log{color:var(--mu);font:10px ui-monospace,Menlo,Consolas,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* settings */
 #cfg{display:none;position:fixed;inset:0;z-index:5;background:rgba(238,242,247,.96);overflow:auto;
  padding:max(14px,env(safe-area-inset-top,0px)) max(18px,env(safe-area-inset-right,0px)) 14px max(18px,env(safe-area-inset-left,0px))}
 #cfg.open{display:block;animation:sheet .18s ease}
@@ -86,36 +103,58 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .showrow input{width:auto;margin:0}
 @media (max-width:520px){#cfg .grid{grid-template-columns:1fr}}
 </style></head><body>
-<div class="wrap">
-  <div class="hdr">
-    <span id="dot"></span>
-    <h1>DroneShield Controller<small id="sub">disconnected</small></h1>
-    <button id="cfgb" aria-label="Connection settings" aria-expanded="false">⚙</button>
+<main id="app">
+  <div class="side">
+    <div class="deck">
+      <div class="deck-h"><span>Throttle</span><span>height &amp; turn</span></div>
+      <div class="pad" aria-label="Throttle and yaw">
+        <button class="u" data-cmd="UP" data-hold="1" aria-label="Climb">▲<small>up</small><em class="tp">UP</em></button>
+        <button class="d" data-cmd="DOWN" data-hold="1" aria-label="Descend">▼<small>down</small><em class="tp">DOWN</em></button>
+        <button class="l" data-cmd="YAW_LEFT" data-hold="1" aria-label="Yaw left">⟲<small>yaw</small><em class="tp">YAW_LEFT</em></button>
+        <button class="r" data-cmd="YAW_RIGHT" data-hold="1" aria-label="Yaw right">⟳<small>yaw</small><em class="tp">YAW_RIGHT</em></button>
+        <div class="c">raise<br>rotate</div>
+      </div>
+    </div>
   </div>
 
-  <div class="chips">
-    <span class="chip" id="chipLink">LINK · OFF</span>
-    <span class="chip" id="chipRx">RX · 0</span>
-    <span class="chip" id="chipSeq">SEQ · 0</span>
-    <span class="chip" id="chipTopic">droneshield/device_01/commands</span>
+  <div class="mid">
+    <div class="top">
+      <span id="dot"></span>
+      <div id="stt">Disconnected<small id="sub">—</small></div>
+      <button id="cfgb" aria-label="Connection settings" aria-expanded="false">⚙</button>
+    </div>
+    <div class="chips">
+      <span class="chip" id="chipLink">LINK · OFF</span>
+      <span class="chip" id="chipRx">RX · 0</span>
+      <span class="chip" id="chipSeq">SEQ · 0</span>
+    </div>
+    <button class="cmd arm" data-cmd="ARM" type="button"><span class="g">🛡</span><span class="name">ARM</span><span class="sub">tap to arm</span></button>
+    <button class="cmd disarm" data-cmd="DISARM" type="button"><span class="g">⛔</span><span class="name">DISARM</span><span class="sub">tap to disarm</span></button>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+      <button class="cmd" data-cmd="STATUS_REQUEST" type="button"><span class="g">📡</span><span class="name">STATUS</span></button>
+      <button class="cmd" data-cmd="PING" type="button"><span class="g">📶</span><span class="name">PING</span></button>
+      <button class="cmd" data-cmd="SIM_RESET" type="button"><span class="g">🔄</span><span class="name">RESET</span></button>
+    </div>
+    <div class="term">
+      <div id="rx">awaiting telemetry…</div>
+      <div id="log" aria-live="polite">—</div>
+    </div>
+    <div class="hint">WASD/arrows · IJKL · Space arm · D disarm</div>
   </div>
 
-  <div class="cmds">
-    <h2>Signed commands</h2>
-    <button class="cmd arm" data-cmd="ARM"><span class="g">🛡</span><span class="name">ARM</span><span class="sub">arm the device</span><em class="tp">—</em></button>
-    <button class="cmd disarm" data-cmd="DISARM"><span class="g">⛔</span><span class="name">DISARM</span><span class="sub">disarm the device</span><em class="tp">—</em></button>
-    <button class="cmd" data-cmd="STATUS_REQUEST"><span class="g">📡</span><span class="name">STATUS</span><span class="sub">request status</span><em class="tp">—</em></button>
-    <button class="cmd" data-cmd="PING"><span class="g">📶</span><span class="name">PING</span><span class="sub">liveness check</span><em class="tp">—</em></button>
-    <button class="cmd wide" data-cmd="SIM_RESET"><span class="g">🔄</span><span class="name">SIM RESET</span><span class="sub">reset the simulation</span><em class="tp">—</em></button>
+  <div class="side">
+    <div class="deck">
+      <div class="deck-h"><span>Attitude</span><span>move</span></div>
+      <div class="pad" aria-label="Pitch and roll">
+        <button class="u" data-cmd="FORWARD" data-hold="1" aria-label="Pitch forward">▲<small>fwd</small><em class="tp">FORWARD</em></button>
+        <button class="d" data-cmd="BACK" data-hold="1" aria-label="Pitch back">▼<small>back</small><em class="tp">BACK</em></button>
+        <button class="l" data-cmd="LEFT" data-hold="1" aria-label="Roll left">◀<small>left</small><em class="tp">LEFT</em></button>
+        <button class="r" data-cmd="RIGHT" data-hold="1" aria-label="Roll right">▶<small>right</small><em class="tp">RIGHT</em></button>
+        <div class="c">pitch<br>roll</div>
+      </div>
+    </div>
   </div>
-  <div class="hint">keyboard: A arm · D disarm · S status · P ping · R sim reset · Esc settings</div>
-
-  <div class="term">
-    <div id="rx">awaiting telemetry…</div>
-    <div id="log" aria-live="polite">—</div>
-  </div>
-  <div class="hint">each tap publishes a signed JSON command · seq increases on every publish</div>
-</div>
+</main>
 
 <section id="cfg"><div class="in">
   <h1>Connection <button id="cfgx" type="button" aria-label="Close">✕</button></h1>
@@ -129,77 +168,110 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
     </div>
     <label class="showrow"><input type="checkbox" id="showp"> Show passwords / key</label>
     <div class="row"><button id="bCon" type="button">Connect</button><button id="bDis" type="button">Disconnect</button></div>
-    <p class="note"><b>Passwords and HMAC key are never stored.</b> Broker URL, username and device ID are remembered. Commands publish to <b>droneshield/&lt;device_id&gt;/commands</b> (firmware listens on TLS 8883; browser uses WSS). <b>seq</b> is persisted locally and increases on every publish (anti-replay).</p>
+    <p class="note"><b>Passwords and HMAC key are never stored.</b> Broker URL, username and device ID are remembered. Movement buttons send signed commands (1 on press, 0 on release) to <b>droneshield/&lt;device_id&gt;/commands</b>. <b>seq</b> is persisted locally and increases on every publish (anti-replay).</p>
   </div>
 </div></section>
 
 <script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js"></script>
 <script>
-/*
-  Publishes signed commands to droneshield/<device_id>/commands
-  Payload: {"device_id":..,"seq":..,"timestamp":..,"command":..,"params":{},"signature":..}
-  signature = HMAC-SHA256 hex of device_id|seq|timestamp|command|<canonical params>
-  canonical params = JSON.stringify(params, sorted keys, compact)
-*/
 const $=id=>document.getElementById(id);
 let client=null,rxCount=0,seq=0;
 const saved=(()=>{try{return JSON.parse(localStorage.getItem('droneshield-ctl')||'{}')}catch(e){return{}}})();
 for(const k of ['url','usr','dev'])if(saved[k])$(k).value=saved[k];
-// seq persisted (anti-replay) — never reset manually
 try{seq=parseInt(localStorage.getItem('droneshield-seq')||'0',10)||0}catch(e){seq=0}
 $('chipSeq').textContent='SEQ · '+seq;
-
 $('showp').onchange=()=>{const t=$('showp').checked?'text':'password';$('pwd').type=t;$('key').type=t};
 
 function device(){return ($('dev').value.trim()||'device_01')}
 function topic(){return 'droneshield/'+device()+'/commands'}
 function hmacKey(){return $('key').value}
-
-// canonical params serializer: sorted keys, compact
 function canon(obj){
   if(obj===null||typeof obj!=='object') return JSON.stringify(obj);
   if(Array.isArray(obj)) return '['+obj.map(canon).join(',')+']';
   const keys=Object.keys(obj).sort();
   return '{'+keys.map(k=>JSON.stringify(k)+':'+canon(obj[k])).join(',')+'}';
 }
-
 async function hmacHex(key,msg){
   const enc=new TextEncoder();
   const k=await crypto.subtle.importKey('raw',enc.encode(key),{name:'HMAC',hash:'SHA-256'},false,['sign']);
   const sig=await crypto.subtle.sign('HMAC',k,enc.encode(msg));
   return [...new Uint8Array(sig)].map(b=>b.toString(16).padStart(2,'0')).join('');
 }
-
 async function makePayload(command,params={}){
   seq++; localStorage.setItem('droneshield-seq',String(seq));
   $('chipSeq').textContent='SEQ · '+seq;
   const ts=Math.floor(Date.now()/1000);
   const cp=canon(params);
   const sig=await hmacHex(hmacKey(), device()+'|'+seq+'|'+ts+'|'+command+'|'+cp);
-  // build payload in common.py order
-  const payload={device_id:device(),seq:seq,timestamp:ts,command:command,params:JSON.parse(cp),signature:sig};
-  return payload;
+  return {device_id:device(),seq:seq,timestamp:ts,command:command,params:JSON.parse(cp),signature:sig};
 }
-
 function log(t){$('log').textContent=t}
-function setStatus(on,t,sub){$('dot').classList.toggle('on',on);$('sub').textContent=t+' · '+(sub||'—');
+function setStatus(on,t,sub){$('dot').classList.toggle('on',on);$('stt').firstChild.nodeValue=t;$('sub').textContent=sub||'—';
  $('chipLink').textContent='LINK · '+(on?'UP':'OFF');$('chipLink').classList.toggle('live',on)}
-function renderTopic(){$('chipTopic').textContent=topic();
- document.querySelectorAll('[data-cmd]').forEach(b=>{const tp=b.querySelector('.tp');if(tp)tp.textContent=topic()})}
-$('dev').addEventListener('input',renderTopic); renderTopic();
-
-async function send(cmd){
-  if(!client||!client.connected){log('not connected');return}
-  if(!hmacKey()){log('enter HMAC key in settings');return}
-  const params={};
-  const payload=await makePayload(cmd,params);
-  const body=JSON.stringify(payload); // keys already in order; params sorted via canon->JSON.parse keeps order
-  // ensure compact (no spaces) — JSON.stringify default no spaces
-  client.publish(topic(),body,{qos:1});
-  log('TX '+topic()+' '+body);
-  buzz(12);
+function renderTopic(){$('chipTopic')&&($('chipTopic').textContent=topic())}
+// no chipTopic element; skip
+function pubCmd(cmd,state){
+  // state provided for hold commands (1/0); discrete commands ignore
+  (async()=>{
+    if(!client||!client.connected){log('not connected');return}
+    if(!hmacKey()){log('enter HMAC key in settings');return}
+    const params = (state===undefined)?{}:{state:state};
+    // for movement hold commands, send state as params.state; for discrete, empty
+    const isHold = state!==undefined;
+    const p = isHold?{state:state}:{};
+    const payload=await makePayload(cmd,p);
+    const body=JSON.stringify(payload);
+    client.publish(topic(),body,{qos:1});
+    log('TX '+topic()+' '+body);
+  })();
 }
-function buzz(ms=12){try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}}
+function buzz(ms=8){try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}}
+
+/* hold buttons */
+const held=new Map();
+function press(cmd,el){
+  if(held.has(cmd))return;
+  held.set(cmd,el);
+  if(el)el.classList.add('hold');
+  pubCmd(cmd,1); buzz(8);
+}
+function release(cmd){
+  const el=held.get(cmd); if(!el&&cmd!==''){} 
+  held.delete(cmd);
+  if(el)el.classList.remove('hold');
+  pubCmd(cmd,0);
+}
+document.querySelectorAll('[data-hold="1"]').forEach(el=>{
+  const cmd=el.dataset.cmd;
+  const down=e=>{e.preventDefault();try{el.setPointerCapture(e.pointerId)}catch(_){};press(cmd,el)};
+  const up=e=>release(cmd);
+  el.addEventListener('pointerdown',down);
+  el.addEventListener('pointerup',up);
+  el.addEventListener('pointercancel',up);
+  el.addEventListener('lostpointercapture',up);
+  el.addEventListener('contextmenu',e=>e.preventDefault());
+});
+/* discrete command buttons */
+document.querySelectorAll('[data-cmd]:not([data-hold])').forEach(b=>{
+  b.addEventListener('click',()=>{pubCmd(b.dataset.cmd);buzz(12)});
+  b.addEventListener('contextmenu',e=>e.preventDefault());
+});
+/* keyboard */
+const KEYS={ArrowUp:'FORWARD',ArrowDown:'BACK',ArrowLeft:'LEFT',ArrowRight:'RIGHT',
+ KeyW:'UP',KeyS:'DOWN',KeyA:'YAW_LEFT',KeyD:'YAW_RIGHT',
+ KeyI:'FORWARD',KeyK:'BACK',KeyJ:'LEFT',KeyL:'RIGHT'};
+const byCmd=c=>document.querySelector('[data-cmd="'+c+'"][data-hold="1"]');
+window.addEventListener('keydown',e=>{
+  if(e.target&&/^(INPUT|TEXTAREA)$/.test(e.target.tagName))return;
+  if(e.code==='Space'){e.preventDefault();if(!e.repeat)pubCmd('ARM');return}
+  if(e.code==='KeyD' && e.shiftKey){if(!e.repeat)pubCmd('DISARM');return} // avoid conflict with yaw
+  if(e.code==='Escape'){setCfg(false);return}
+  const c=KEYS[e.code]; if(!c)return;
+  e.preventDefault();
+  const el=byCmd(c); if(el)press(c,el);
+});
+window.addEventListener('keyup',e=>{const c=KEYS[e.code]; if(c)release(c)});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){held.forEach((el,cmd)=>release(cmd))}});
 
 function connect(){
   disconnect();
@@ -209,8 +281,7 @@ function connect(){
   const o={clientId:'ctl_'+Math.random().toString(16).slice(2,10),clean:true,reconnectPeriod:3000,connectTimeout:8000,keepalive:30,username:$('usr').value,password:$('pwd').value};
   client=mqtt.connect($('url').value.trim(),o);
   client.on('connect',()=>{setStatus(true,'Connected',topic());setCfg(false);
-    client.subscribe(topic(),{qos:1});client.subscribe('droneshield/'+device()+'/telemetry',{qos:1});
-    client.subscribe('droneshield/'+device()+'/status',{qos:1})});
+    client.subscribe(topic(),{qos:1})});
   client.on('reconnect',()=>setStatus(false,'Reconnecting…',$('url').value));
   client.on('close',()=>{if(client)setStatus(false,'Disconnected',$('url').value)});
   client.on('error',e=>setStatus(false,'Error',e&&e.message||'connection failed'));
@@ -222,20 +293,6 @@ function disconnect(){
   if(client){const c=client;client=null;try{c.end(true)}catch(e){}}
   setStatus(false,'Disconnected','—');
 }
-
-document.querySelectorAll('[data-cmd]').forEach(b=>{
-  b.addEventListener('click',()=>send(b.dataset.cmd));
-  b.addEventListener('contextmenu',e=>e.preventDefault());
-});
-
-const KEYMAP={KeyA:'ARM',KeyD:'DISARM',KeyS:'STATUS_REQUEST',KeyP:'PING',KeyR:'SIM_RESET'};
-window.addEventListener('keydown',e=>{
-  if(e.target&&/^(INPUT|TEXTAREA)$/.test(e.target.tagName))return;
-  if(e.code==='Escape'){setCfg(false);return}
-  const c=KEYMAP[e.code]; if(c){e.preventDefault();send(c)}
-});
-window.addEventListener('keyup',e=>{});
-
 function setCfg(o){$('cfg').classList.toggle('open',o);$('cfgb').setAttribute('aria-expanded',o)}
 $('cfgb').onclick=()=>setCfg(!$('cfg').classList.contains('open'));
 $('cfgx').onclick=()=>setCfg(false);
