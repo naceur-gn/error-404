@@ -1,36 +1,37 @@
 # robot-controler-via-mqtt
 
-A browser-based robot / quad controller that drives any device over **MQTT** (WebSocket).
+A browser-based **DroneShield** controller that publishes **signed commands** to an MQTT broker.
 
-## Features
+## What it does
 
-- **Light, clean interface** — soft white theme, high contrast, easy on the eyes
-- **Landscape game-console layout** — dual control pads (throttle & yaw · pitch & roll) with hold feedback and haptics
-- **Topic on every button** — each control prints the exact MQTT topic it publishes (updates live with the base topic)
-- **Arm / Mode safety switches** — armed (green) · disarmed (red) · stabilized / acro
-- **Live link telemetry** — connection state, RX counter and last received message in the console
-- **Settings sheet** — broker WebSocket URL, username, password (never stored) and base topic, remembered locally
-- **Keyboard support** — `WASD` / arrows · `IJKL` · `Space` arm · `M` mode · `Esc` close
-- **Safety release** — releasing a button, switching tab or hiding the page publishes `0` for every held command
-- **Portrait guard** — asks you to rotate to landscape, like a real handheld controller
+Every tap publishes a signed JSON command to
 
-## MQTT topics (base topic default `quad`)
+```
+droneshield/<device_id>/commands
+```
 
-| Topic | Payload | Meaning |
-|---|---|---|
-| `<base>/arm` | `1` / `0` | arm / disarm |
-| `<base>/mode` | `1` / `0` | acro / stabilized |
-| `<base>/up` `<base>/down` | `1` while held | climb / descend |
-| `<base>/yaw_left` `<base>/yaw_right` | `1` while held | yaw |
-| `<base>/forward` `<base>/back` | `1` while held | pitch |
-| `<base>/left` `<base>/right` | `1` while held | roll |
+on the HiveMQ broker (browser uses WSS; firmware listens on TLS 8883), with an HMAC-SHA256 signature matching `drone_attack_sim/common.py` (`sign`, `make_payload`):
 
-Telemetry is read from `<base>/+` (e.g. `<base>/battery`, `<base>/rssi`) and shown in the console.
+```json
+{"device_id":"device_01","seq":1,"timestamp":1700000000,"command":"ARM","params":{},"signature":"<64 hex>"}
+```
+
+- **seq** — monotonically increasing `uint64`, persisted locally (anti-replay).
+- **timestamp** — current Unix time (within 300 s).
+- **command** — `STATUS_REQUEST`, `PING`, `ARM`, `DISARM`, `SIM_RESET`.
+- **params** — object with sorted keys, compact (used in HMAC).
+- **signature** — HMAC-SHA256 hex of `device_id|seq|timestamp|command|<canonical params>` using `DSHL_HMAC_KEY`.
+
+## UI
+
+- Light, clean theme (easy on the eyes)
+- Status dot, link/RX/SEQ/topic chips
+- Command buttons: ARM, DISARM, STATUS, PING, SIM RESET — each shows the target topic
+- Terminal log (TX/RX)
+- Settings: broker WSS URL, username, password (never stored), device ID, HMAC key (never stored)
 
 ## Run
 
 Open `index.html` in a browser, or deploy the folder as a static site (Vercel config included).
 
-```json
-{ "framework": null, "buildCommand": null, "installCommand": null, "outputDirectory": "." }
-```
+Broker credentials and HMAC key must match the firmware (`drone_attack_sim/config.py`).
